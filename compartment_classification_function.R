@@ -1,16 +1,17 @@
 CNVestimate_ST <- function(seurat_obj,
                            deconv_result,MalType, # parameters used to estimate non-malignant cell type propotion
                            out_dir='./', # output for saving files
-                           ref_cell_ratio=0.1,# minimal percents of spots considered to be reference in inferCNV or CopyKAT
-                           method='infercnv',runCNV_only=FALSE,
+                           ref_cell_ratio=0.1, StrImm_ratio=0.4, # reference spots selection
+                           method='infercnv',runCNV_only=FALSE, # parameter for CNV profile estimation
                            gene_ordering_table='',num_threads=6, # parameters for inferCNV
-                           genome='hg20', # parameters for CopyKAT
+                           # genome='hg20', # parameters for CopyKAT
                            cluster_method='exp',scale.max=10,npcs=50,k.param=20,dims=1:10,resolution=0.8, # parameters for clustering
-                           exponent=3, cv_thres=0.1,# denoise parameters
-                           StrImm_ratio=0.4,Para_cor=0.7, # parameters for benign/malignant identification
+                           exponent=3, cv_thres=0.1, # parameters of DenoiseCNV
                            heatmap_cutoff=0.01, # pararmeters for heatmap visualization
-                           marker=NULL,
+                           marker=c('COL1A1','PTPRC'), # show markers distribution of given markers
                            ...){
+
+}
 
 
 
