@@ -1,4 +1,7 @@
-graph_constr_10X <- function(seurat_obj,n=1,mat=NULL,to_binary=FALSE,to_igraph=TRUE){
+graph_constr_10X <- function(seurat_obj,n=1,mat=NULL,to_binary=FALSE,to_igraph=TRUE,ncores=20){
+    
+    library(dplyr)
+    library(igraph)
     
     poi=seurat_obj@images$image@coordinates[,c('row','col')]
     # fix true coordinate of spots
@@ -23,9 +26,14 @@ graph_constr_10X <- function(seurat_obj,n=1,mat=NULL,to_binary=FALSE,to_igraph=T
             #     mat=mat_adjut
             # }
 
-            edge[,'weight']=apply(edge,1,function(y){
-                1/dist(rbind(mat[y[1],],mat[y[2],]),method='euclidean')
-            })
+            # edge[,'weight']=apply(edge,1,function(y){
+            #     1/dist(rbind(mat[y[1],],mat[y[2],]),method='euclidean')
+            # })
+            
+            edge[,'weight']=parallel::mclapply(1:nrow(edge),function(z){
+                y=edge[z,]
+                c(1/dist(rbind(mat[y[,1],],mat[y[,2],]),method='euclidean'))
+            },mc.cores=ncores) %>% unlist()
 
             # scale within whole network
             m=mean(edge[,'weight'])
@@ -47,15 +55,17 @@ graph_constr_10X <- function(seurat_obj,n=1,mat=NULL,to_binary=FALSE,to_igraph=T
             # edge[which(edge[,'weight']<=0),'weight']=0
 
             # scele within node
-            # edge[,'weight']=apply(edge,1,function(z){
-            #     w1=filter(edge,Edge_1 %in% z[1])[,3]
-            #     w2=filter(edge,Edge_1 %in% z[2])[,3]
+            # edge[,'weight']=parallel::mclapply(edge,1,function(y){
+            #     z=edge[y,]
+            #     w1=filter(edge,Edge_1 %in% z[,1])[,3]
+            #     w2=filter(edge,Edge_1 %in% z[,2])[,3]
             #     m1=mean(w1)
             #     s1=sd(w1)
             #     m2=mean(w2)
             #     s2=sd(w2)
+            #     (z[,3]-m1)/s1
             #     max((as.numeric(z[3])-m1)/s1,(as.numeric(z[3])-m2)/s2)
-            # })
+            # },mc.cores=ncores)
             # edge[which(edge[,'weight']<=0),'weight']=0
 
 
@@ -98,7 +108,7 @@ graph_constr_10X <- function(seurat_obj,n=1,mat=NULL,to_binary=FALSE,to_igraph=T
 
 neighbour_average <- function(seurat_obj,mat,n=1,lambda=0.5,similarity_weighted=TRUE){
     
-    edge=graph_constr_10X(seurat_obj,n=1,mat=NULL,to_binary=TRUE,to_igraph=FALSE)
+    edge=graph_constr_10X(seurat_obj,n=n,mat=NULL,to_binary=TRUE,to_igraph=FALSE)
     
     # Banksy style
     x=lapply(rownames(mat),function(y){
