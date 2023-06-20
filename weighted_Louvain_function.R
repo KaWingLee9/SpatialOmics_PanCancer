@@ -28,11 +28,10 @@ graph_constr_10X <- function(seurat_obj,n=1,mat=NULL,to_binary=FALSE,to_igraph=T
             })
 
             # scale within whole network
-            # m=mean(edge[,'weight'])
-            # s=sd(edge[,'weight'])
-            # edge[,'weight']=(edge[,'weight']-m)/s
-            # 
-            # edge[which(edge[,'weight']<=0),'weight']=0
+            m=mean(edge[,'weight'])
+            s=sd(edge[,'weight'])
+            edge[,'weight']=(edge[,'weight']-m)/s
+            edge[which(edge[,'weight']<=0),'weight']=0
             # edge[,'weight']=edge[,'weight']+abs(min(edge[,'weight']))
 
             # scele within node
