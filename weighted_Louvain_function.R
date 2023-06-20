@@ -116,7 +116,7 @@ neighbour_average <- function(seurat_obj,mat,n=1,lambda=0.5,similarity_weighted=
         n2=filter(edge,Edge_1==n1) %>% .[,'Edge_2']
         mat1=mat[n1,]
         mat2=mat[n2,]
-        if (similarity_weighted){
+        if (similarity_weighted & lambda>0){
             w=apply(mat2,1,function(x){1/dist(rbind(x,mat1))})
             w=w/sum(w)
             mat2=w*mat2
