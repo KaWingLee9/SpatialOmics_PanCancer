@@ -106,12 +106,12 @@ graph_constr_10X <- function(seurat_obj,n=1,mat=NULL,to_binary=FALSE,to_igraph=T
     }
 }
 
-neighbour_average <- function(seurat_obj,mat,n=1,lambda=0.5,similarity_weighted=TRUE){
+neighbour_average <- function(seurat_obj,mat,n=1,lambda=0.5,similarity_weighted=TRUE,ncores=20){
     
-    edge=graph_constr_10X(seurat_obj,n=n,mat=NULL,to_binary=TRUE,to_igraph=FALSE)
+    edge=graph_constr_10X(seurat_obj,n=n,mat=NULL,to_binary=TRUE,to_igraph=FALSE,ncores=ncores)
     
     # Banksy style
-    x=lapply(rownames(mat),function(y){
+    x=parallel::mclapply(rownames(mat),function(y){
         n1=y
         n2=filter(edge,Edge_1==n1) %>% .[,'Edge_2']
         mat1=mat[n1,]
@@ -123,6 +123,6 @@ neighbour_average <- function(seurat_obj,mat,n=1,lambda=0.5,similarity_weighted=
         }
         mat1_adjust=mat1*lambda+apply(mat2*(1-lambda),2,sum)
         return(mat1_adjust)
-    }) %>% dplyr::bind_rows()
+    },mc.cores=ncores) %>% dplyr::bind_rows()
     return(x)
 }
