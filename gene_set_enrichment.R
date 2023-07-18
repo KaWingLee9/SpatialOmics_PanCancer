@@ -6,5 +6,5 @@ library(irGSEA)
 
 seurat_obj <- irGSEA.score(object=seurat_obj,assay="RNA",slot="data",
                            custom=TRUE,geneset=gene_ls,msigdb=FALSE, 
-                           method="AUCell", aucell.MaxRank=ceiling(0.5*nrow(seurat_obj)),
-                           seeds = 123, ncores = 40)
+                           method="AUCell", aucell.MaxRank=ceiling(0.2*nrow(seurat_obj)),
+                           seeds=123,ncores=40)
