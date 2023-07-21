@@ -44,6 +44,6 @@ LCPModuleComparison <- function(character_mat,LCP_label,cell_type_comp,
         lm_model$coefficients %>% .[nrow(.),]
     }) %>% t() %>% data.frame(check.names=FALSE)
     
-    test_result[,'p.adjust']=p.adjust(test_result[,4])
+    test_result[,'p.adjust']=p.adjust(test_result[,'Pr(>|t|)'])
     return(test_result)
 }
