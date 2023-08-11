@@ -72,7 +72,7 @@ ExprDeconvolution <- function(scRNA_obj,stRNA_obj,ncores=50){
     prism_obj=new.prism(reference=scRNA_mat_filtered,mixture=stRNA_mat,input.type="count.matrix",
                         cell.state.labels=scRNA_label,cell.type.labels=scRNA_label,key="Hepatocyte",
                         outlier.cut=0,outlier.fraction=1)
-    prism_result=run.prism(prism=prism_obj,ncores=50)
+    prism_result=run.prism(prism=prism_obj,n.cores=ncores)
     
     exp_mat_ls=list()
     for (x in unlist(prism_result@prism@map)){
