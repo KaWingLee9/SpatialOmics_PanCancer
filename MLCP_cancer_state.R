@@ -11,7 +11,6 @@ seurat_obj <- irGSEA.score(object=seurat_obj,assay="RNA",slot="data",
                            method="AUCell", aucell.MaxRank=ceiling(0.2*nrow(seurat_obj)),
                            seeds=123,ncores=40)
 
-
 # differential cancer state of tumor cells between MLCP
 # sum of the covariate_cell_type could not be 1 to avoid multicollinearity
 LCPModuleComparison <- function(character_mat,LCP_label,cell_type_comp,
