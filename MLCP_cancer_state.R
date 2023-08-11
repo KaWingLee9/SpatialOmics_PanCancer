@@ -1,7 +1,8 @@
+# Method 1: Linear model (corrected tumor cell percentage)
+# ==============================================
 library(Seurat)
 library(irGSEA)
 library(dplyr)
-
 # gene set enrichment for spots
 # seurat_obj: Seurat class of ST data
 # gene_ls: list of gene sets (e.g. .rds files in `gene_set directory`)
@@ -47,3 +48,8 @@ LCPModuleComparison <- function(character_mat,LCP_label,cell_type_comp,
     test_result[,'p.adjust']=p.adjust(test_result[,'Pr(>|t|)'])
     return(test_result)
 }
+
+
+
+Method 2: Expression profile deconvolution
+# ==============================================
