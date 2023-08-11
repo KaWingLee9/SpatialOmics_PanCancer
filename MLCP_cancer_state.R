@@ -49,7 +49,6 @@ LCPModuleComparison <- function(character_mat,LCP_label,cell_type_comp,
     return(test_result)
 }
 
-
 # ==============================================
 Method 2: Expression profile deconvolution
 # scRNA_obj: Seurat object of scRNA-seq (with cell type label in ident slot)
