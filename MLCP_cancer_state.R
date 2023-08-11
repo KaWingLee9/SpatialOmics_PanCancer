@@ -1,5 +1,5 @@
-# Method 1: Linear model (corrected tumor cell percentage)
 # ==============================================
+# Method 1: Linear model (corrected tumor cell percentage)
 library(Seurat)
 library(irGSEA)
 library(dplyr)
@@ -50,6 +50,36 @@ LCPModuleComparison <- function(character_mat,LCP_label,cell_type_comp,
 }
 
 
-
-Method 2: Expression profile deconvolution
 # ==============================================
+Method 2: Expression profile deconvolution
+# scRNA_obj: Seurat object of scRNA-seq (with cell type label in ident slot)
+# stRNA_obj: Seurat object of ST
+ExprDeconvolution <- function(scRNA_obj,stRNA_obj,ncores=50){
+    
+    library(dplyr)
+    library(Seurat)
+    library(BayesPrism)
+    
+    undefined_num=which(Idents(scRNA_obj)!='Undefined')
+    scRNA_obj=subset(scRNA_obj,cells=colnames(scRNA_obj)[undefined_num])
+    scRNA_mat=GetAssayData(scRNA_obj,assay='RNA',slot='counts') %>% t() %>% as.matrix()
+    scRNA_label=Idents(scRNA_obj)
+    stRNA_mat=GetAssayData(stRNA_obj,assay='RNA',slot='counts') %>% t() %>% as.matrix()
+    
+    scRNA_mat_filtered=cleanup.genes(input=scRNA_mat,input.type="count.matrix",species="hs", 
+                                        gene.group=c( "Rb","Mrp","other_Rb","chrM","MALAT1"),
+                                        exp.cells=5)
+    scRNA_mat_filtered=select.gene.type(scRNA_mat_filtered,gene.type="protein_coding")
+    
+    prism_obj=new.prism(reference=scRNA_mat_filtered,mixture=stRNA_mat,input.type="count.matrix",
+                        cell.state.labels=scRNA_label,cell.type.labels=scRNA_label,key="Hepatocyte",
+                        outlier.cut=0,outlier.fraction=1)
+    prism_result=run.prism(prism=prism_obj,ncores=50)
+    
+    exp_mat_ls=list()
+    for (x in unlist(prism_result@prism@map)){
+        exp_mat_ls[[x]]=get.exp(bp=prism_result,state.or.type="type",cell.name=x) %>% t() %>% as.sparse()
+    }
+    exp_mat_ls[['deconv']]=get.fraction(prism_result,which.theta='final',state.or.type='type') %>% t()
+    return(exp_mat_ls)
+}
