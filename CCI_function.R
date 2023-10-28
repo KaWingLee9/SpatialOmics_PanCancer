@@ -101,3 +101,46 @@ CalLCPCCI <- function(lr_score_spot,cell_type_score,MLCP_result,cor_result,
     colnames(test_result)=c('sig_lr_pair','cell_type','LCP')
     return(test_result)
 }
+
+# LCP-related LR pairs
+CalLCPCCI_V2 <- function(lr_score_spot,LCP_result,
+                      ref_LCP,obs_LCP,LCP_cutoff=20){
+    test_result=lapply(obs_LCP,function(obs_LCP){
+        obs_spot=filter(LCP_result,cluster_result==obs_LCP) %>% rownames()
+        ref_spot=filter(LCP_result,cluster_result==ref_LCP) %>% rownames()
+        if (length(obs_spot)<=LCP_cutoff | length(ref_spot)<=LCP_cutoff){
+            return(NULL)
+        }
+
+        lr_score_spot_tmp=lr_score_spot[c(ref_spot,obs_spot),] %>% data.frame(check.names=FALSE)
+
+        lr_test=sapply(lr_score_spot_tmp,function(z){
+            df_lm=data.frame(character=z)
+            df_lm[,'LCP']=rep(c(ref_LCP,obs_LCP),times=c(length(ref_spot),length(obs_spot))) %>% 
+                factor(levels=c(ref_LCP,obs_LCP))
+            if (length(unique(z))==1){
+                test_result=c('Estimate'=0.0000000001,'Std. Error'=0,'Std. Error'=0,'Pr(>|t|)'=1)
+            }else{
+                lm_model=lm(character~LCP,data=df_lm) %>% summary()
+                test_result=lm_model$coefficients %>% .[nrow(.),]
+            }
+            return(test_result)
+        })  %>% t() %>% data.frame(check.names=FALSE)
+        
+        lr_test[,'lr_pair']=rownames(lr_test)
+        lr_test[,'LCP']=obs_LCP
+
+        return(lr_test)
+
+    }) %>% .[!sapply(.,is.null)] %>% dplyr::bind_rows()
+    
+    # test_result=test_result[!sapply(test_result,is.null)]
+    # test_result=dplyr::bind_rows(test_result)
+    
+    if (nrow(test_result)==0){
+        return(NULL)
+    }
+    
+    return(test_result)
+    
+}
