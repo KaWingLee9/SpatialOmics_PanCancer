@@ -1,8 +1,6 @@
 ### Gene sets used in this work  
 
-`KEGG_hsa.rds`: KEGG pathwasy gene sets collected in May, 2022  
-
-`MSigDB_Hallmarks.rds`: MSigDB (H, Hallmark gene sets)
+`KEGG_hsa.rds`: KEGG pathwasy gene sets collected in May, 2022
 
 `PMID35931863_NatureGenetics_Pancancer.rds`: Barkley, D., Moncada, R., Pour, M., Liberman, D. A., Dryg, I., Werba, G., Wang, W., Baron, M., Rao, A., Xia, B., França, G. S., Weil, A., Delair, D. F., Hajdu, C., Lund, A. W., Osman, I., & Yanai, I. (2022). Cancer cell states recur across tumor types and form specific interactions with the tumor microenvironment. Nature genetics, 54(8), 1192–1201. https://doi.org/10.1038/s41588-022-01141-9  
 
