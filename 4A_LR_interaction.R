@@ -3,6 +3,7 @@ library(ggplot2)
 library(aplot)
 library(ComplexHeatmap)
 
+source('https://github.com/KaWingLee9/in_house_tools/blob/main/meta_analysis/custom_fun.R')
 
 # LR interaction score of spots
 CalSpotLRScore_V2 <- function(exp_mat,lr_ls,min_spot=10){

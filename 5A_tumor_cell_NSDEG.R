@@ -7,6 +7,8 @@ library(Matrix)
 library(doParallel)
 library(Seurat)
 
+source('https://github.com/KaWingLee9/in_house_tools/blob/main/meta_analysis/custom_fun.R')
+
 # CSIDE
 
 exp_group=c('Niche_1','Niche_2','Niche_3','Niche_4','Niche_5','Niche_6')

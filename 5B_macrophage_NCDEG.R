@@ -7,6 +7,8 @@ library(Matrix)
 library(doParallel)
 library(Seurat)
 
+source('https://github.com/KaWingLee9/in_house_tools/blob/main/meta_analysis/custom_fun.R')
+
 # CSIDE between Niche_4 and Niche_11
 compare_group_control=c('Niche_4') # Macrophage without other immune cells
 compare_group_experimental=c('Niche_11') # Macrophage with other immune cell
