@@ -1,10 +1,13 @@
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
+from scipy.spatial import distance
 
 import anndata as ad
 import scanpy as sc
 import SOAPy_st as sp
+
+exec(open('https://github.com/KaWingLee9/in_house_tools/blob/main/multiplexed_images_pipeline/multiplexed_image_processing.py').read())
 
 # Spatial distribution pattern of three cell types (compare the distance between CT1 and CT2, and that between CT1 and CT3)
 # Reference: Immune cell topography predicts response to PD-1 blockade in cutaneous T cell lymphoma
@@ -232,6 +235,49 @@ def relative_distance_analysis(adata,sample_key,cluster_key,CT1,CT2,CT3,
         
     return(adata)
 
+# cell annotation of CT1
+def subtype_assignment_by_RelativeDistance(adata_x,cluster_key,CT1,CT2,CT3):
+    
+    coord_mat=pd.DataFrame(adata_x.obsm['spatial'],index=adata_x.obs_names,columns=['x','y'])
+
+    cell_type_tmp=adata_x.obs[cluster_key]
+
+    ct1_id=coord_mat.index[cell_type_tmp==CT1]
+    ct2_id=coord_mat.index[cell_type_tmp==CT2]
+    ct3_id=coord_mat.index[cell_type_tmp==CT3]
+
+    df_1=coord_mat.loc[ct1_id,:]
+    df_2=coord_mat.loc[ct2_id,:]
+    df_3=coord_mat.loc[ct3_id,:]
+
+
+    if ct2_id.shape[0]!=0:
+        # dist_12=np.sqrt(np.sum(( np.array(df_1)[:,np.newaxis,:]- np.array(df_2))**2,axis=2))
+        dist_12=distance.cdist(df_1,df_2,'euclidean')
+        dist_12_min=np.apply_along_axis(np.min,axis=1,arr=dist_12)
+    else:
+        dist_12_min=np.array([float('inf') for i in range(0,len(ct1_id))])
+
+    if ct3_id.shape[0]!=0:
+        # dist_13=np.sqrt(np.sum(( np.array(df_1)[:,np.newaxis,:]- np.array(df_3))**2,axis=2))
+        dist_13=distance.cdist(df_1,df_3,'euclidean')
+        dist_13_min=np.apply_along_axis(np.min,axis=1,arr=dist_13)
+    else:
+        dist_13_min=np.array([float('inf') for i in range(0,len(ct1_id))])
+
+    df=pd.DataFrame({'CT2':dist_12_min,'CT3':dist_13_min})
+    x=df.apply(lambda x: x[0]<x[1],axis=1)
+    df['relative_subtype']=[ 'CT1_CT2' if x[i] else 'CT1_CT3' for i in range(0,len(x)) ]
+
+    df.index=ct1_id
+
+    adata_x.obs['relative_analysis_subtype']=None
+    adata_x.obs.loc[ct1_id,'relative_analysis_subtype']=df.loc[ct1_id,'relative_subtype']
+    adata_x.obs.loc[ct2_id,'relative_analysis_subtype']=CT2
+    adata_x.obs.loc[ct3_id,'relative_analysis_subtype']=CT3
+    
+    return(adata_x)
+
 # e.g. for one dataset
 cell_info=pd.read_csv(path+'cell_info_ljr.csv',index_col=0)
 adata=ad.AnnData(X=csr_matrix(pd.DataFrame([0 for i in range(0,cell_info.shape[0])])),
@@ -239,6 +285,30 @@ adata=ad.AnnData(X=csr_matrix(pd.DataFrame([0 for i in range(0,cell_info.shape[0
 adata.obsm['spatial']=np.array(cell_info[['location_x','location_y']])
 x=adata.obs['image_id'].value_counts()
 
+# analysis of multiple samples (parameters designed similar to SOAPy)
 adata=relative_distance_analysis(adata,sample_key='image_id',cluster_key='cell_type',CT1='Macrophage',CT2='T cell',CT3='Tumor_cell',
                                  shuffle_type='shuffle_except1',quantatative_method='RN',shuffle_times=100,n_jobs=50)
 adata.uns['RelativeDistance']['RN_result']
+
+# subset one sample
+adata_x=adata[:,adata.obs['image_id']==1]
+adata_x=subtype_by_RelativeDistance(adata_x,CT1='Macrophage',CT2='T cell',CT3='Tumor_cell',cluster_key='cell_type')
+adata_x.obs.loc[adata_x.obs['relative_analysis_subtype']=='CT1_CT2','relative_analysis_subtype']='M01'
+adata_x.obs.loc[adata_x.obs['relative_analysis_subtype']=='CT1_CT3','relative_analysis_subtype']='M02'
+
+fig1=plot_pixel(adata_x,color_panel,max_quantile=1,show_boundary=False,show_legend=False)
+
+fig2=sc.pl.spatial(adata_x,color='cell_type_other',spot_size=8,
+                  palette={'Macrophage':'#FF0000',
+                           'T cell':'#0000FF',
+                           'Tumor cell':'#00FF00'},
+                  na_color='#E8E8E8',
+                  show=False)
+
+fig3=sc.pl.spatial(adata_x,color='relative_analysis_subtype',spot_size=8,
+              palette={'Macrophage':'#FF000040',
+                       'T cell':'#0000FF40',
+                       'Tumor cell':'#00FF0040',
+                       'M01':'#FFFF00FF',
+                       'M02':'#FF00FFFF'},
+              na_color='#E8E8E840',show=False)
