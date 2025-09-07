@@ -25,14 +25,6 @@ spatial_score_df=spatial_score_df %>% filter(Cell_num>=500,CT1_num>=50)
 spatial_score_df['CT1_CT2_ratio']=spatial_score_df['CT1_CT2']/spatial_score_df['Cell_num']
 spatial_score_df['CT1_CT3_ratio']=spatial_score_df['CT1_CT3']/spatial_score_df['Cell_num']
 
-mstat_5=maxstat.test(Surv(OS,Ev.O)~CT1_CT2_ratio,data=spatial_score_df,smethod='LogRank')
-spatial_score_df$CT1_CT2_group[spatial_score_df$CT1_CT2_ratio>mstat_5$estimate]='High'
-spatial_score_df$CT1_CT2_group[spatial_score_df$CT1_CT2_ratio<=mstat_5$estimate]='Low'
-
-mstat_6=maxstat.test(Surv(OS,Ev.O)~CT1_CT3_ratio,data=spatial_score_df,smethod='LogRank')
-spatial_score_df$CT1_CT3_group[spatial_score_df$CT1_CT3_ratio>mstat_6$estimate]='High'
-spatial_score_df$CT1_CT3_group[spatial_score_df$CT1_CT3_ratio<=mstat_6$estimate]='Low'
-
 survfit(Surv(OS,Ev.O)~CT1_CT2_group+CT1_CT3_group,data=spatial_score_df) %>%
   ggsurvplot(data=spatial_score_df,pval=TRUE,risk.table=TRUE)
 
