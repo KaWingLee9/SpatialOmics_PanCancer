@@ -200,7 +200,7 @@ OneVsRes=function(df,group_col,value_col){
         colnames(df_test)=c('value','group')
         df_test=data.frame(df_test)
         
-        wilcox.test(m,mu=median(c(m,n)))$p.value
+        wilcox.test(m,n)$p.value
         
     },USE.NAMES=TRUE)
 }
