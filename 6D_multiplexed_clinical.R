@@ -21,7 +21,6 @@ spatial_score_df[spatial_score_df[,'OS']>=OS.cutoff,'OS']=OS.cutoff
 spatial_score_df=spatial_score_df %>% group_by(Patient_ID,Age,Gender,Typ,Grade,Ev.O,OS,DFS,DX.name) %>% 
     summarise_at(vars(Cell_num,CT1_num,CT2_num,CT3_num,CT1_CT2,CT1_CT3),sum,na.rm=TRUE) %>% data.frame()
 
-spatial_score_df=spatial_score_df %>% filter(Cell_num>=500,CT1_num>=50)
 spatial_score_df['CT1_CT2_ratio']=spatial_score_df['CT1_CT2']/spatial_score_df['Cell_num']
 spatial_score_df['CT1_CT3_ratio']=spatial_score_df['CT1_CT3']/spatial_score_df['Cell_num']
 
