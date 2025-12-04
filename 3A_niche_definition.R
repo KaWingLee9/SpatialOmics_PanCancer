@@ -175,8 +175,8 @@ Heatmap(niche_cluster_comp,name='Percantage',clustering_method_rows='ward.D2',cl
                                  c('#F4FAED','#D6EFD0','#B2E1B9','#77CAC5','#42A6CB','#1373B2','#084384'))
 )
 # cell type composition of niches
-x=read.csv('./Version 4/niche_cluster_result.csv',row.names=1,check.names=FALSE)
-y=read.csv('../3_LCP_definition/Version 3/spot_type.csv',row.names=1,check.names=FALSE)
+x=read.csv('niche_cluster_result.csv',row.names=1,check.names=FALSE)
+y=read.csv('spot_type.csv',row.names=1,check.names=FALSE)
 y=y[rownames(x),]
 z=y %>% group_by(x[,'Niche_combined']) %>% summarise_if(is.numeric,mean) %>% data.frame(row.names=1)
 z1=z[paste0('Niche_',1:13),c('Parachymal.cell','Endothelial.cell','Fibroblast','Macrophage',
