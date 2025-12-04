@@ -157,8 +157,10 @@ niche_type=lapply(dataset_visium,function(i){
 }) %>% dplyr::bind_rows()
 
 cluster_num=6:50
+niche_spot_scale=scale(niche_spot)
+niche_spot_scale[niche_spot_scale>=3]=3
 niche_cluster_df=sapply(cluster_num,function(x){
-    niche_cluster_result <- kmeans(niche_spot,x,iter.max=100000,nstart=40)
+    niche_cluster_result <- kmeans(niche_spot_scale,x,iter.max=100000,nstart=40)
     return(niche_cluster_result$cluster)
 })
 colnames(niche_cluster_df)=paste0('N_',cluster_num)
