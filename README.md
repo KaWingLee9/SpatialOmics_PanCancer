@@ -1,6 +1,6 @@
 # Pan-cancer analysis of spatial transcriptomics reveals heterogeneous tumor spatial microenvironment
 
-Other customized visualization functions used in this project could be found at:  
+Other customized functions for visualization used in this project could be found at:  
 https://github.com/KaWingLee9/in_house_tools/tree/main/visulization  
 
 ### Contact
