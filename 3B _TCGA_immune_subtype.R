@@ -26,4 +26,4 @@ rownames(df)=names(l)
 # count to TPM
 expr_norm=NormalizeCount(df,length.type='transcript',method='tpm')
 # predict TCGA immune subtype
-semble(X=expr_norm,geneids='symbol')
+df_ImmuneSubtype=callEnsemble(X=expr_norm,geneids='symbol')
