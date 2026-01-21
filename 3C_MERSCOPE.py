@@ -111,7 +111,7 @@ neig_df=adata.uns['SOAPy']['niche']
 neig_df=neig_df.iloc[:,0:13]
 df_zscore=neig_df.apply(stats.zscore)
 df_zscore[df_zscore>=3]=3
-cluster_num=15
+cluster_num=30
 km=KMeans(n_clusters=cluster_num)
 clusters_res=km.fit_predict(df_zscore)
 adata.obs['Niche_zscore']=clusters_res
