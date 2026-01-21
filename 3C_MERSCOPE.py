@@ -107,3 +107,11 @@ sp.pp.make_network(adata,sample_key='dataset',method='knn',
                    cutoff=15,scale=1.0,cluster_key='CellType_Lv2')
 sp.tl.get_c_niche(adata,k_max=30,celltype_key='CellType_Lv2',sample_key='dataset')
 
+neig_df=adata.uns['SOAPy']['niche']
+neig_df=neig_df.iloc[:,0:13]
+df_zscore=neig_df.apply(stats.zscore)
+df_zscore[df_zscore>=3]=3
+cluster_num=15
+km=KMeans(n_clusters=cluster_num)
+clusters_res=km.fit_predict(df_zscore)
+adata.obs['Niche_zscore']=clusters_res
