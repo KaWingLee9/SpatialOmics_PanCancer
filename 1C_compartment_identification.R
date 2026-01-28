@@ -14,7 +14,19 @@ CNVestimate_ST <- function(seurat_obj,deconv_result,MalType,
                            marker=NULL,
                            ...){
     
-    
+    ### Key parameters of CNVestimate_ST:
+    # seurat_obj: the SeuratV4 object
+    # deconv_result: a data frame of the cell type fraction (the row number should be same as the column number of seurat object)
+    # MalType: the malignant cell type (should be in the colnames of deconv_result)
+    # StrimmType: the stromal/immune cell type (should be in the colnames of deconv_result)
+    # out_dir: directory to store the output
+    # gene_ordering_table: the data frame passed to gene_order_file in infercnv::CreateInfercnvObject
+    # method: one of infercnv or infercnv_HMM
+    # cluster_method: methods for cell type clustering, could be exp or CNV
+    # StrImm_ratio: least propotion to consider spots with Parachymal parts
+    # cv_thres, exponent: the lower bound of CV and the exponent of CV in the process of CNV denoising
+
+
     # threshold for benign or malignant tissue
     # least propotion to consider spots with Parachymal parts
     
@@ -687,6 +699,12 @@ RunInferCNV <- function(seurat_obj=NULL,
         return(infercnv_obj)
     }
 }
+
+# Run CNVestimate_ST
+gene_ordering_table <- read.table('./gene_ordering_file.txt',
+                                  header=FALSE,sep=" ",check.names=FALSE) %>%
+   .[! duplicated(.[,1],fromLast=TRUE,),] %>%
+   data.frame(row.names=1,check.names=FALSE)
 
 CNVestimate_ST(seurat_obj,deconv_result,MalType=malignant_cell_type,
                 out_dir=d,gene_ordering_table=gene_ordering_table,
