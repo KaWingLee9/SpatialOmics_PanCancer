@@ -1,5 +1,12 @@
 # construct spatial network from seurat_obj
-graph_constr_10X <- function(seurat_obj,n=1,mat=NULL,to_binary=FALSE,to_igraph=TRUE,ncores=20){
+graph_constr_10X <- function(seurat_obj,n=1,to_binary=FALSE,to_igraph=TRUE,ncores=20){
+
+    ### Usage for graph_constr_10X:
+    # seurat_obj: SeuratV4 object
+    # n: the round number of the spots considered
+    # to_binary: whether the weight of the edge is binary
+    # to_igraph: return igraph object; otherwise return a data frame
+    # ncores: the CPU used 
     
     library(dplyr)
     library(igraph)
@@ -28,7 +35,8 @@ graph_constr_10X <- function(seurat_obj,n=1,mat=NULL,to_binary=FALSE,to_igraph=T
     colnames(edge)=c('Edge_1','Edge_2','Binary_weight')
 
     if (!to_binary){
-        if (!is.null(mat)){
+        # if (!is.null(mat)){
+            mat=poi
             edge[,'Binary_weight']=NULL
             # if (average){
             #     mat_adjut=sapply(rownames(mat),function(z){
@@ -108,7 +116,7 @@ graph_constr_10X <- function(seurat_obj,n=1,mat=NULL,to_binary=FALSE,to_igraph=T
             #     w2=filter(edge,Edge_1 %in% x[1])[,3]
             #     as.numeric(x[3])/sum(min(w1,w2))
             # },mc.cores=20)
-            }
+            # }
         }
     
     if (to_igraph){
