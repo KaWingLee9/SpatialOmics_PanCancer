@@ -25,10 +25,6 @@ CNVestimate_ST <- function(seurat_obj,deconv_result,MalType,
     # cluster_method: methods for cell type clustering, could be exp or CNV
     # StrImm_ratio: least propotion to consider spots with Parachymal parts
     # cv_thres, exponent: the lower bound of CV and the exponent of CV in the process of CNV denoising
-
-
-    # threshold for benign or malignant tissue
-    # least propotion to consider spots with Parachymal parts
     
     # Visualization
     # q: quantile for heatmap expression
