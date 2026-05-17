@@ -13,6 +13,8 @@ meta.data=read.csv(paste0(path,'meta_data.csv'),row.names=1,check.names=FALSE)
 spatial_score_df=dplyr::left_join(spatial_score_df,meta.data,by=c('ImageID'='RoiID'))
 
 spatial_score_df=spatial_score_df %>% filter(! is.na(OS))
+# filter sample
+spatial_score_df=spatial_score_df %>% filter(Cell_num>=500,CT1_num>=50)
 
 OS.cutoff=2800
 
