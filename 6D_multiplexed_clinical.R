@@ -5,7 +5,7 @@ library(survival)
 library(maxstat)
 library(survminer)
 
-# survival analysis
+# survival analysis - NSCLC
 spatial_score_df=read.csv(paste0(path,'RN_shuffle_except1_df.csv'),check.names=FALSE)
 colnames(spatial_score_df)[1]='ImageID'
 
@@ -38,6 +38,80 @@ spatial_score_df$CT1_CT3_group[spatial_score_df$CT1_CT3_ratio<= median(spatial_s
 spatial_score_df$CT1_CT3_group[spatial_score_df$CT1_CT3_ratio>= median(spatial_score_df$CT1_CT3_ratio,na.rm=TRUE)]="High"
 p=survfit(Surv(OS,Ev.O)~CT1_CT2_group+CT1_CT3_group,data=spatial_score_df) %>%
   ggsurvplot(data=spatial_score_df,pval=TRUE,risk.table=FALSE,surv.median.line='none',break.x.by=700)
+p
+
+# survival analysis - HCC
+path='./PMID39327501_HCC_NatureCancer_2024/'
+
+spatial_score_df=read.csv(paste0(path,'RN_shuffle_except1_df.csv'),check.names=FALSE)
+colnames(spatial_score_df)[1]='ImageID'
+
+meta.data=read.csv(paste0(path,'clinical_data.csv'),check.names=FALSE)
+
+spatial_score_df=dplyr::left_join(spatial_score_df,meta.data,by=c('ImageID'='SampleID'))
+
+OS.cutoff=2000
+spatial_score_df=spatial_score_df %>% filter(! is.na(Osday))
+spatial_score_df[spatial_score_df[,'Osday']>=OS.cutoff,'OS01']=0
+spatial_score_df[spatial_score_df[,'Osday']>=OS.cutoff,'Osday']=OS.cutoff
+
+spatial_score_df=spatial_score_df %>% filter(Cell_num>=500,CT1_num>=50)
+
+spatial_score_df[,'CT1_CT2_group']=NA
+spatial_score_df$CT1_CT2_group[spatial_score_df$CT1_CT2_ratio<= median(spatial_score_df$CT1_CT2_ratio,na.rm=TRUE)]="Low"
+spatial_score_df$CT1_CT2_group[spatial_score_df$CT1_CT2_ratio> median(spatial_score_df$CT1_CT2_ratio,na.rm=TRUE)]="High"
+
+spatial_score_df[,'CT1_CT3_group']=NA
+spatial_score_df$CT1_CT3_group[spatial_score_df$CT1_CT3_ratio<= median(spatial_score_df$CT1_CT3_ratio,na.rm=TRUE)]="Low"
+spatial_score_df$CT1_CT3_group[spatial_score_df$CT1_CT3_ratio> median(spatial_score_df$CT1_CT3_ratio,na.rm=TRUE)]="High"
+
+p=survfit(Surv(Osday,OS01)~CT1_CT2_group+CT1_CT3_group,data=spatial_score_df) %>%
+  ggsurvplot(data=spatial_score_df,pval=TRUE,risk.table=FALSE)
+p
+
+# survival analysis - BRCA
+spatial_score_df=read.csv(paste0(path,'RN_shuffle_except1_df.csv'),check.names=FALSE)
+colnames(spatial_score_df)[1]='ImageID'
+spatial_score_df[,'PatientID']=gsub('_[0-9]+$','',spatial_score_df[,'ImageID'])
+
+spatial_score_df=spatial_score_df %>% group_by(PatientID) %>% 
+    summarise_at(vars(Cell_num,CT1_num,CT2_num,CT3_num,CT1_CT2,CT1_CT3),sum,na.rm=TRUE) %>% data.frame()
+
+spatial_score_df['CT1_CT2_ratio']=spatial_score_df['CT1_CT2']/spatial_score_df['Cell_num']
+spatial_score_df['CT1_CT3_ratio']=spatial_score_df['CT1_CT3']/spatial_score_df['Cell_num']
+
+meta.data=read.delim(paste0(path,'brca_metabric_clinical_data_from_cbioportal.tsv'),check.names=FALSE)
+
+spatial_score_df=dplyr::left_join(spatial_score_df,meta.data,by=c('PatientID'='Patient ID'))
+spatial_score_df[,'OS.death']=as.numeric(gsub('[:A-Z]+$','',spatial_score_df[,'Overall Survival Status']))
+spatial_score_df[,'RFS.death']=as.numeric(gsub('[ :A-Za-z]+$','',spatial_score_df[,'Relapse Free Status']))
+
+OS.cutoff=200
+spatial_score_df=spatial_score_df %>% filter(! is.na(`Overall Survival (Months)`))
+spatial_score_df[spatial_score_df[,'Overall Survival (Months)']>=OS.cutoff,'OS.death']=0
+spatial_score_df[spatial_score_df[,'Overall Survival (Months)']>=OS.cutoff,'Overall Survival (Months)']=OS.cutoff
+
+spatial_score_df=spatial_score_df %>% filter(! is.na(`Relapse Free Status (Months)`))
+spatial_score_df[spatial_score_df[,'Relapse Free Status (Months)']>=OS.cutoff,'RFS.death']=0
+spatial_score_df[spatial_score_df[,'Relapse Free Status (Months)']>=OS.cutoff,'Relapse Free Status (Months)']=OS.cutoff
+
+spatial_score_df=spatial_score_df %>% filter(Cell_num>=200,# CT1_num>=10)
+
+spatial_score_df['CT1_CT2_ratio']=spatial_score_df['CT1_CT2']/spatial_score_df['Cell_num']
+spatial_score_df['CT1_CT3_ratio']=spatial_score_df['CT1_CT3']/spatial_score_df['Cell_num']
+
+survfit(Surv(`Overall Survival (Months)`,OS.death)~CT1_CT2_group+CT1_CT3_group,data=spatial_score_df) %>%
+  ggsurvplot(data=spatial_score_df,pval=TRUE,risk.table=TRUE)
+
+spatial_score_df[,'CT1_CT2_group']=NA
+spatial_score_df$CT1_CT2_group[spatial_score_df$CT1_CT2_ratio<= median(spatial_score_df$CT1_CT2_ratio,na.rm=TRUE)]="Low"
+spatial_score_df$CT1_CT2_group[spatial_score_df$CT1_CT2_ratio>= median(spatial_score_df$CT1_CT2_ratio,na.rm=TRUE)]="High"
+spatial_score_df[,'CT1_CT3_group']=NA
+spatial_score_df$CT1_CT3_group[spatial_score_df$CT1_CT3_ratio<= median(spatial_score_df$CT1_CT3_ratio,na.rm=TRUE)]="Low"
+spatial_score_df$CT1_CT3_group[spatial_score_df$CT1_CT3_ratio>= median(spatial_score_df$CT1_CT3_ratio,na.rm=TRUE)]="High"
+
+p=survfit(Surv(`Overall Survival (Months)`,OS.death)~CT1_CT2_group+CT1_CT3_group,data=spatial_score_df) %>%
+  ggsurvplot(data=spatial_score_df,pval=TRUE,risk.table=FALSE)
 p
 
 # response to immunotherapy
