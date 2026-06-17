@@ -95,7 +95,7 @@ spatial_score_df=spatial_score_df %>% filter(! is.na(`Relapse Free Status (Month
 spatial_score_df[spatial_score_df[,'Relapse Free Status (Months)']>=OS.cutoff,'RFS.death']=0
 spatial_score_df[spatial_score_df[,'Relapse Free Status (Months)']>=OS.cutoff,'Relapse Free Status (Months)']=OS.cutoff
 
-spatial_score_df=spatial_score_df %>% filter(Cell_num>=200,# CT1_num>=10)
+spatial_score_df=spatial_score_df %>% filter(Cell_num>=200,CT1_num>=10)
 
 spatial_score_df['CT1_CT2_ratio']=spatial_score_df['CT1_CT2']/spatial_score_df['Cell_num']
 spatial_score_df['CT1_CT3_ratio']=spatial_score_df['CT1_CT3']/spatial_score_df['Cell_num']
