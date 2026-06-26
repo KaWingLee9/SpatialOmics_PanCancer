@@ -7,7 +7,7 @@ source('https://github.com/KaWingLee9/in_house_tools/blob/main/visulization/cust
 # Usage: https://github.com/KaWingLee9/in_house_tools/tree/main/meta_analysis#rank-combination
 source('https://github.com/KaWingLee9/in_house_tools/blob/main/meta_analysis/custom_fun.R')
 
-# LR interaction score of spots
+# LR interaction score of spots (without considering neighbouring spots)
 CalSpotLRScore_V2 <- function(exp_mat,lr_ls,min_spot=10){
     
     # LR score for spots
@@ -53,11 +53,115 @@ CalSpotLRScore_V2 <- function(exp_mat,lr_ls,min_spot=10){
     
 }
 
+# LR interaction score of spots (considering neighbouring spots)
+CalSpotLRScore_V3 <- function(exp_mat,exp_mat_w,lr_ls,min_spot=10){
+    
+    library(Seurat)
+    
+    # LR score for spots
+    lr_score_spot=sapply(1:length(lr_ls),function(i){
+
+        lr_pair=lr_ls[[i]]
+        
+        # filter out LR with no genes detected
+        if (length(setdiff(unlist(lr_pair),rownames(exp_mat)))!=0){
+            return(NULL)
+        }
+        
+        # geometric mean of all genes in LR pair
+        L_genes=lr_pair[['L']]
+        if (length(L_genes)==1){
+            L_score=exp_mat[L_genes,,drop=FALSE] %>% as.matrix() %>% t() %>% data.frame()
+        }else{
+            L_score=apply(exp_mat[L_genes,,drop=FALSE],2,function(x){
+                prod(x)^(1/length(x))
+            }) %>% data.frame()
+        }
+        if (length(L_genes)==1){
+            L_score_w=exp_mat_w[L_genes,,drop=FALSE] %>% as.matrix() %>% t() %>% data.frame()
+        }else{
+            L_score_w=apply(exp_mat_w[L_genes,,drop=FALSE],2,function(x){
+                prod(x)^(1/length(x))
+            }) %>% data.frame()
+        }
+
+        R_genes=lr_pair[['R']]
+        if (length(R_genes)==1){
+            R_score=exp_mat[R_genes,,drop=FALSE] %>% as.matrix() %>% t() %>% data.frame()
+        }else{
+            R_score=apply(exp_mat[R_genes,,drop=FALSE],2,function(x){
+                prod(x)^(1/length(x))
+            }) %>% data.frame()
+        }
+        if (length(R_genes)==1){
+            R_score_w=exp_mat_w[R_genes,,drop=FALSE] %>% as.matrix() %>% t() %>% data.frame()
+        }else{
+            R_score_w=apply(exp_mat_w[R_genes,,drop=FALSE],2,function(x){
+                prod(x)^(1/length(x))
+            }) %>% data.frame()
+        }
+        
+        df=sqrt((L_score_w*R_score+L_score*R_score_w)/2)
+        
+        colnames(df)=names(lr_ls)[i]
+        return(df)
+    }) %>% dplyr::bind_cols() %>% data.frame(row.names=colnames(exp_mat),check.names=FALSE)
+
+    # filter efficient L-R: number of spots with positive score not lower than `min_spot`
+    LR_used=which(apply(lr_score_spot,2,function(x){sum(x>0)})>=min_spot) %>% names()
+    lr_score_spot=lr_score_spot[,LR_used]
+    
+    return(as.sparse(t(lr_score_spot)))
+    
+}
+
+# sptial weighted expression
+spatialweighted_exp=function(seurat_obj,n=1,
+                             assay='RNA',new_assay='weighted',
+                             ncores=20,...){
+    
+    coord_df=graph_constr_10X(seurat_obj,n=n,to_binary=TRUE,to_igraph=FALSE,ncores=ncores)
+    coord_df[,'Edge']=1
+
+    coord_df[,'Edge_1']=as.character(coord_df[,'Edge_1'])
+    coord_df[,'Edge_2']=as.character(coord_df[,'Edge_2'])
+
+    coord_df[,'Niche_node_1']=niche_cluster_result[ coord_df[,'Edge_1'] , 'Niche_combined' ]
+    coord_df[,'Niche_node_2']=niche_cluster_result[ coord_df[,'Edge_2'] , 'Niche_combined' ]
+
+    coord_df[coord_df[,'Niche_node_1']!=coord_df[,'Niche_node_2'],'Edge']=0
+    
+    coord_df=coord_df %>% reshape2::dcast(Edge_1~Edge_2,value.var='Edge') %>% data.frame(row.names=1,check.names=FALSE)
+    coord_df[is.na(coord_df)]=0
+    x=colnames(seurat_obj)
+    x=setdiff(x,rownames(coord_df))
+    coord_df[,x]=0
+    coord_df[x,]=0
+
+    x=intersect(rownames(coord_df),colnames(seurat_obj))
+
+    exp_mat=seurat_obj@assays$RNA@data %>% as.matrix()
+    exp_mat=exp_mat[,x]
+    coord_df=coord_df[x,x] %>% as.matrix()
+
+    exp_lag=(coord_df %*% t(exp_mat))/apply(coord_df,1,sum)
+    exp_lag[is.na(exp_lag)]=0
+    mat=t((t(exp_mat)+exp_lag)/2)
+    mat=mat[rownames(seurat_obj),colnames(seurat_obj)]
+    seurat_obj[['weighted']]=CreateAssayObject( mat )
+    return(seurat_obj)
+}
+
 seurat_obj=readRDS(file.path('../1_data_preprocessing',file.path(dataset_1,paste0(dataset_1,'.rds'))))
 niche_cluster_result_sample=filter(niche_cluster_result,sample==dataset_1)
 
+# review version
+# seurat_obj=spatialweighted_exp(seurat_obj)
+
 exp_mat=seurat_obj@assays$RNA@data
 lr_score_spot=CalSpotLRScore_V2(exp_mat,lr_ls,min_spot=0)
+# review version
+# lr_score_spot=CalSpotLRScore_V3(exp_mat,exp_mat_w,lr_ls,min_spot=0)
 lr_score_spot=lr_score_spot %>% as.matrix() %>% t()
 
 # LR interaction  of each sample
