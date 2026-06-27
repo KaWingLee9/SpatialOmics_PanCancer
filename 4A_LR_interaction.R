@@ -166,20 +166,74 @@ lr_score_spot=lr_score_spot %>% as.matrix() %>% t()
 
 # LR interaction  of each sample
 
-ind=intersect(rownames(lr_score_spot),rownames(niche_cluster_result))
-lr_score_spot=lr_score_spot[ind,]
+for (dataset in dataset_used){
 
-seurat_obj=seurat_obj[,ind]
-seurat_obj[['CCI']]=CreateAssayObject(t(lr_score_spot))
+    print(dataset)
 
-Idents(seurat_obj)=niche_cluster_result[ind,'Niche_combined']
+    seurat_obj=readRDS( paste0('../1_data_preprocessing/',dataset,'/',dataset,'.rds') )
+    
+    ind=intersect(colnames(seurat_obj),rownames(niche_cluster_result))
+    seurat_obj=seurat_obj[,ind]
+    
+    Idents(seurat_obj)=niche_cluster_result[colnames(seurat_obj),'Niche_combined']
+    
+    x=Idents(seurat_obj) %>% table()
+    
+    x=x[x>10] %>% names()
+    
+    # seurat_obj=subset(seurat_obj,idents=x)
+    
+    future::plan("multicore",workers=60) 
+    options(future.globals.maxSize=10000*1024^2)
+    sce.markers=FindAllMarkers(object=seurat_obj,
+                                only.pos=FALSE,min.pct=0,logfc.threshold=0,return.thresh=1)
+    
+    sce.markers[,'dataset']=dataset
 
-future::plan("multicore",workers=10) 
-options(future.globals.maxSize=10000*1024^2)
-sce.markers=FindAllMarkers(object=seurat_obj,
-                            only.pos=FALSE,min.pct=0,logfc.threshold=0,return.thresh=1)
+    sce.markers=filter(sce.markers,cluster %in% x)
+    
+    write.csv(sce.markers,paste0('./FindMarkers/',dataset,'.csv'))
+    
+}
 
 # meta analysis
+
+dir='./FindMarkers/'
+dataset_ls=gsub('.csv','',grep('BRCA|COAD|HNSC|CSCC|LUAD|GBM|OV|PRAD|PAAD|KIRC|LIHC|LUSC',dir(dir),value=TRUE))
+
+l=lapply(dataset_ls,function(x){
+
+    res=try({y <- read.csv(paste0(dir,x,'.csv'),row.names=1,check.names=FALSE)},silent=TRUE)
+    if (inherits(res,'try-error')) return(NULL)
+    return(y)
+})
+
+l=l[!unlist(lapply(l,is.null))]
+
+for (n in paste0('Niche_',1:13)){
+    
+    l_niche=parallel::mclapply(l,function(x){
+        y=filter(x,cluster==n)
+        rownames(y)=y[,'gene']
+        return(y)
+    },mc.cores=20) %>% .[lapply(.,nrow)!=0]
+
+    test_result=CombRank_DFLs(l_niche,p_col='p_val',ES_col='avg_log2FC',
+                              min_num=0,min_ratio=0.5,method='RankSum')
+
+    write.csv(test_result,paste0('./FindMarkers_meta/',n,'.csv'))
+    
+}
+
+meta_anlysis_result=lapply(dir('./FindMarkers_meta/'),function(x){
+    y=read.csv(paste0('./FindMarkers_meta/',x),row.names=1,check.names=FALSE)
+    y[,'Niche']=gsub('.csv','',x)
+    y[,'gene']=rownames(y)
+    return(y)
+}) %>% dplyr::bind_rows()
+
+rownames(meta_anlysis_result)=1:nrow(meta_anlysis_result)
+
 l=lapply(dataset_ls,function(x){
 
     res=try({y <- read.csv(paste0(dir,x,'.csv'),row.names=1,check.names=FALSE)},silent=TRUE)
@@ -219,11 +273,11 @@ meta_anlysis_result_CellChat_filtered=meta_anlysis_result_CellChat %>% filter(av
 
 # LR number of the niches
 dd=meta_anlysis_result_CellChat_filtered %>% 
-    group_by(lr_pair) %>% summarize(tumor_type=list(Niche))
+    group_by(lr_pair) %>% summarize(Niche_type=list(Niche))
 
 options(repr.plot.width=25,repr.plot.height=8)
 p=ggplot(data=dd,
-       aes(x=tumor_type))+
+       aes(x=Niche_type))+
     scale_x_upset(order_by='freq',sets=paste0('Niche_',1:13))+
     geom_bar()+
     xlab('')+
@@ -285,75 +339,6 @@ p=OrderedPlot(p,x='pathway_name',y='Niche',cluster_value='OR1',cluster_var=NULL,
               method='ward.D2'
               )
 p
-
-# showing the expression of ligands and receptors respectively
-
-# meta analysis
-for (dataset in dataset_used){
-
-    print(dataset)
-
-    seurat_obj=readRDS( paste0('../1_data_preprocessing/',dataset,'/',dataset,'.rds') )
-    
-    ind=intersect(colnames(seurat_obj),rownames(niche_cluster_result))
-    seurat_obj=seurat_obj[,ind]
-    
-    Idents(seurat_obj)=niche_cluster_result[colnames(seurat_obj),'Niche_combined']
-    
-    x=Idents(seurat_obj) %>% table()
-    
-    x=x[x>10] %>% names()
-    
-    # seurat_obj=subset(seurat_obj,idents=x)
-    
-    future::plan("multicore",workers=60) 
-    options(future.globals.maxSize=10000*1024^2)
-    sce.markers=FindAllMarkers(object=seurat_obj,
-                                only.pos=FALSE,min.pct=0,logfc.threshold=0,return.thresh=1)
-    
-    sce.markers[,'dataset']=dataset
-
-    sce.markers=filter(sce.markers,cluster %in% x)
-    
-    write.csv(sce.markers,paste0('./FindMarkers/',dataset,'.csv'))
-    
-}
-
-dir='./FindMarkers/'
-dataset_ls=gsub('.csv','',grep('BRCA|COAD|HNSC|CSCC|LUAD|GBM|OV|PRAD|PAAD|KIRC|LIHC|LUSC',dir(dir),value=TRUE))
-
-l=lapply(dataset_ls,function(x){
-
-    res=try({y <- read.csv(paste0(dir,x,'.csv'),row.names=1,check.names=FALSE)},silent=TRUE)
-    if (inherits(res,'try-error')) return(NULL)
-    return(y)
-})
-
-l=l[!unlist(lapply(l,is.null))]
-
-for (n in paste0('Niche_',1:13)){
-    
-    l_niche=parallel::mclapply(l,function(x){
-        y=filter(x,cluster==n)
-        rownames(y)=y[,'gene']
-        return(y)
-    },mc.cores=20) %>% .[lapply(.,nrow)!=0]
-
-    test_result=CombRank_DFLs(l_niche,p_col='p_val',ES_col='avg_log2FC',
-                              min_num=0,min_ratio=0.5,method='RankSum')
-
-    write.csv(test_result,paste0('./FindMarkers_meta/',n,'.csv'))
-    
-}
-
-meta_anlysis_result=lapply(dir('./FindMarkers_meta/'),function(x){
-    y=read.csv(paste0('./FindMarkers_meta/',x),row.names=1,check.names=FALSE)
-    y[,'Niche']=gsub('.csv','',x)
-    y[,'gene']=rownames(y)
-    return(y)
-}) %>% dplyr::bind_rows()
-
-rownames(meta_anlysis_result)=1:nrow(meta_anlysis_result)
 
 # showing the expression of ligands and receptors respectively
 df=meta_anlysis_result
